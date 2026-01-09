@@ -15,16 +15,32 @@ public class Consumer implements Runnable {
     public void run() {
         try {
             while (true) {
+                // If this throws InterruptedException, we are shutting down.
+                // We let it bubble up to the outer catch block.
                 Order order = queue.take(); 
-                long waitTime = System.currentTimeMillis() - order.getCreatedAt();
-                metrics.recordOrderProcessed(waitTime);
                 
-                System.out.println(chefName + " cooking #" + order.getId());
-                Thread.sleep(1500); 
-                
-                if (order.getId() % 5 == 0) metrics.printStats();
+                try {
+                    // --- PROCESS ORDER ---
+                    long waitTime = System.currentTimeMillis() - order.getCreatedAt();
+                    
+                    // Simulate a random "Kitchen Accident" (1 in 10 chance)
+                    if (Math.random() < 0.1) {
+                        throw new RuntimeException("Pizza fell on the floor!");
+                    }
+
+                    System.out.println(Thread.currentThread().getName() + " cooking #" + order.getId());
+                    Thread.sleep(1500); 
+                    
+                    metrics.recordOrderProcessed(waitTime);
+                    
+                } catch (RuntimeException e) {
+                    // Handle "business logic" errors here so the thread stays alive
+                    System.err.println("!!! ERROR: " + chefName + " failed order #" + order.getId() + ": " + e.getMessage());
+                    metrics.recordFailure();
+                }
             }
         } catch (InterruptedException e) {
+            // This is a "lifecycle" exception (shutdown signal)
             Thread.currentThread().interrupt();
         }
     }
