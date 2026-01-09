@@ -1,29 +1,30 @@
-public class Consumer implements Runnable{
-    private final PizzaQueue queue;
+import java.util.concurrent.BlockingQueue;
+
+public class Consumer implements Runnable {
+    private final BlockingQueue<Order> queue;
     private final String chefName;
+    private final KitchenMetrics metrics;
 
-
-    public Consumer(PizzaQueue queue, String chefName){
-        this.queue=queue;
-        this.chefName=chefName;
+    public Consumer(BlockingQueue<Order> queue, String chefName, KitchenMetrics metrics) {
+        this.queue = queue;
+        this.chefName = chefName;
+        this.metrics = metrics;
     }
 
     @Override
-    public void run(){
-        try{
-            while(true){
-                Order order=queue.takeOrder();
-
-                //Metric calculation
-                long waitTime=System.currentTimeMillis()-order.getCreatedAt();
-
-                System.out.println(chefName+" started cooking Order #"+order.getId()+" (Wait time: "+waitTime+"ms)");
+    public void run() {
+        try {
+            while (true) {
+                Order order = queue.take(); 
+                long waitTime = System.currentTimeMillis() - order.getCreatedAt();
+                metrics.recordOrderProcessed(waitTime);
                 
-                //Simulate cooking time
-                Thread.sleep(2000);
-                System.out.println(chefName+" finished Order #"+order.getId());
+                System.out.println(chefName + " cooking #" + order.getId());
+                Thread.sleep(1500); 
+                
+                if (order.getId() % 5 == 0) metrics.printStats();
             }
-        }catch(InterruptedException e){
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }

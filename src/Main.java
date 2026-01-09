@@ -1,15 +1,15 @@
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
 public class Main {
     public static void main(String[] args){
-        PizzaQueue kitchenCounter=new PizzaQueue(5);
+        BlockingQueue<Order> kitchenCounter=new ArrayBlockingQueue<>(5);
+        KitchenMetrics metrics=new KitchenMetrics();
 
         //Start 1 order taker
-        Thread orderTaker=new Thread(new Producer(kitchenCounter));
+        new Thread(new Producer(kitchenCounter)).start();
+        new Thread(new Consumer(kitchenCounter, "Chef Mario", metrics)).start();
+        new Thread(new Consumer(kitchenCounter, "Chef Luigi",metrics)).start();
 
-        Thread chef1=new Thread(new Consumer(kitchenCounter, "Chef Mario"));
-        Thread chef2=new Thread(new Consumer(kitchenCounter, "Chef Luigi"));
-
-        orderTaker.start();
-        chef1.start();
-        chef2.start();
     }
 }
